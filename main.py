@@ -1,6 +1,5 @@
-def main():
-    print("Hello from data!")
+from generate_dashboard import main
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
