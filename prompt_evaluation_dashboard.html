@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Evaluation Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --secondary: #8b5cf6;
+            --accent-warm: #f59e0b;
+            --accent-cool: #06b6d4;
+            --bg-dark: #0f172a;
+            --bg-light: #f8fafc;
+            --card-bg: #ffffff;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #f1f5f9 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 2px;
+        }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Top Chats Table */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            margin-bottom: 3rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-bottom: 2px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+            font-size: 0.9rem;
+        }
+
+        th.sorted-asc::after {
+            content: ' ↑';
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        th.sorted-desc::after {
+            content: ' ↓';
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-dark);
+        }
+
+        tbody tr:hover {
+            background: rgba(59, 130, 246, 0.03);
+        }
+
+        .chat-name {
+            font-weight: 500;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .filler-badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+            color: #92400e;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .filler-badge.high {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+            color: #7f1d1d;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .turns-badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05));
+            color: #164e63;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border);
+            margin-top: 3rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrapper {
+                height: 250px;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            td, th {
+                padding: 0.75rem;
+            }
+
+            .chat-name {
+                max-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Prompt Evaluation Dashboard</h1>
+            <p>Personal insights into your conversational patterns with Claude</p>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="card stat">
+                <div class="stat-icon">💬</div>
+                <div class="stat-label">Total Chats</div>
+                <div class="stat-value">144</div>
+            </div>
+            <div class="card stat">
+                <div class="stat-icon">🔤</div>
+                <div class="stat-label">Total Prompts</div>
+                <div class="stat-value">1,094</div>
+            </div>
+            <div class="card stat">
+                <div class="stat-icon">📝</div>
+                <div class="stat-label">Total Words</div>
+                <div class="stat-value">52.7K</div>
+            </div>
+            <div class="card stat">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-label">Avg Prompt</div>
+                <div class="stat-value">48<span style="font-size: 0.6em;"> words</span></div>
+            </div>
+            <div class="card stat">
+                <div class="stat-icon">🔄</div>
+                <div class="stat-label">Avg Turns</div>
+                <div class="stat-value">7.6</div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <h2 class="section-title">Habit Patterns</h2>
+        <div class="charts-grid">
+            <!-- Pie Chart: Filler Words -->
+            <div class="chart-container">
+                <h3 class="chart-title">Top Filler Words Usage</h3>
+                <div class="chart-wrapper">
+                    <canvas id="fillerPieChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Bar Chart: Filler vs Constraints -->
+            <div class="chart-container">
+                <h3 class="chart-title">Filler Words vs Explicit Constraints</h3>
+                <div class="chart-wrapper">
+                    <canvas id="fillerVsConstraintsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top 10 Longest Chats -->
+        <h2 class="section-title">Top 10 Longest Conversations</h2>
+        <div class="table-container">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="rank">#</th>
+                            <th class="sortable" data-column="name">Chat Name</th>
+                            <th class="sortable" data-column="turns">Total Turns</th>
+                            <th class="sortable" data-column="avg_length">Avg Prompt Length</th>
+                            <th class="sortable" data-column="filler">Filler Words</th>
+                            <th class="sortable" data-column="constraints">Constraints</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topChatsTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Dashboard generated from Claude conversations export analysis</p>
+            <p style="font-size: 0.85rem; margin-top: 0.5rem; opacity: 0.8;">Data represents 1,094 prompts across 144 conversations</p>
+        </div>
+    </div>
+
+    <script>
+        // CSV data embedded
+        const csvData = `Target_ID,Chat_Name,Total_Turns,Avg_Prompt_Length,Filler_Word_Count,Explicit_Constraints
+1,n8n Google Sheets to Email Workflow,1,15,0,0
+2,Coin Flip Streak Probability Simulation,2,271,0,2
+3,AI Prompt Optimization Framework,16,60,11,8
+4,Learning GNU Radio software benefits,3,174,0,4
+5,Building plot accuracy,4,19,1,0
+6,Adding .local/bin to PATH,1,24,0,0
+8,Wireless communications fundamentals overview,6,16,1,2
+9,Structuring an internship presentation narrative,11,79,2,1
+10,Maintaining iPhone 16 Pro battery health at 90%,4,11,0,0
+11,Finding meaningful problems beyond tech products,2,47,0,0
+12,Fixing wifi driver issues on Linux Mint,6,20,0,0
+13,Building on classifier model evaluation,39,33,1,2
+14,Agentic AI for systems engineering automation,13,55,3,3
+15,Converting old Asus Vivobook to Linux for better performance,71,20,6,3
+16,Choosing between Raspberry Pi and microcontrollers,14,19,0,4
+17,Linux home server,86,32,7,15
+18,AI detection of electrical test points in control cabinets,10,128,4,3
+19,Coding the extract features function,26,30,0,0
+20,Internship work with non-conformance and parametric data,5,45,0,3
+21,Day 3 beginning,22,18,0,1
+22,Birthday gift ideas for best friend,4,25,0,0
+23,Brave browser causing laptop fan to run continuously,1,26,1,0
+24,Project prototype development,10,21,0,0
+25,Starting day one,28,21,1,2
+26,Setting up separate projects with custom instructions,3,184,0,4
+27,Resume optimization for AI and connectivity internships,32,45,6,8
+28,Scraping Kaufland's weekly discount leaflet,1,12,0,0
+29,Capital of Namibia,1,6,0,0
+30,Fat's effect on muscle fatigue,2,11,0,0
+31,Zsh list syntax error,12,16,2,0
+32,Sensor data analysis internship interview prep,111,40,20,30
+33,Telegram to Obsidian note automation,1,41,0,0
+34,AI-powered trip video reel generator,2,90,0,1
+35,Learning roadmap with Obsidian setup,6,41,1,2
+36,Landing a luxury automotive internship with German and coding,6,118,4,8
+37,Machine learning fundamentals and numpy for data processing,13,21,1,3
+38,Porsche dream and career contribution,1,21,0,0
+39,Understanding Z transforms, DTFT, and Fourier transforms,3,29,0,0
+40,Ridge regression cost function and derivation,2,13,0,0
+41,Ridge cost expressed with Euler's number,1,17,0,0
+42,Oscilloscope UI redesign with glass morphism,2,31,1,0
+43,Breast tumor detection: recall vs precision trade-off,1,30,0,0
+44,Advanced C++ programming projects,3,10,0,0
+45,Building an end-to-end ML product project,4,46,1,2
+46,Optimizing performance with 235M rows in Polars,2,25,0,0
+47,OPC UA communication framework for distributed production multi-agent systems,14,52,1,4
+48,CUDA requirements for PyTorch learning,3,11,0,0
+49,Standardized carrier system optimization,10,80,0,1
+50,Nebenkosten-Retter AI app concept and development costs,4,147,1,3
+51,Selling products on Gumroad,6,19,0,1
+52,Convolution theorem and time-frequency domain duality,1,98,0,0
+53,Finding boring SaaS ideas in Germany,9,35,1,1
+54,Building a 3D oscillator widget for websites,7,53,1,1
+55,Portfolio website and Google AI tools,1,27,0,1
+56,Testing a static portfolio website before deployment,1,16,0,0
+57,Testing a portfolio website,1,12,0,0
+58,Database schema design,1,122,4,2
+59,Multi-peg-in-hole gripper for automotive cable assembly,3,247,3,3
+60,this code doesntnot respond wh...,1,24,0,0
+61,generate a prompt for antigrav...,2,35,0,1
+62,I need to understand whats the...,7,51,3,4
+63,acts as a senior data scientis...,12,35,0,3
+64,,3,99,3,1
+65,The Fourier Transform is the m...,2,7,0,0
+66,Time domain vs frequency domain signals,3,27,0,0
+67,I intend to begin a project th...,5,39,2,3
+68,Explain necessary concepts fro...,8,54,1,2
+69,Assessing knowledge gaps in communications and signal theory,4,44,0,2
+70,Addressing lack of formal background in job application,2,47,0,1
+71,Resume optimization and improvement,2,12,0,0
+72,Personal Tech Learning Roadmap,3,125,1,1
+73,Premium Finance Tracker App Design,6,44,0,1
+74,AI-Powered Minimal Finance Tracker,1,89,2,2
+75,German Fluency in 4 Months,4,86,0,0
+76,Apple's Google AI Dependency,1,22,0,0
+77,Git File Addition Error,3,21,1,0
+78,Personalized Learning Roadmap Strategy,3,190,0,1
+79,Learning Algorithmic Thinking with CS50,8,9,0,0
+80,n8n vs Make.com Workflow Platform,7,12,0,1
+81,Zapier Data Processing Workflows,2,11,0,0
+82,Gumroad Digital Product Launch Strategy,1,126,0,1
+83,Make.com Automation for Beginners,2,14,0,0
+84,App Development Possibilities,2,28,0,0
+85,Digital Product Sales on Gumroad,1,20,0,0
+86,AI Assistant Capabilities Overview,3,14,0,0
+88,Python Code Quiz Challenge,1,124,4,2
+89,Git Learning and GitHub Profile Optimization,4,74,0,0
+90,Idea Organization Strategy,3,98,0,0
+91,CDMA Signal Estimation Problem,1,21,0,0
+92,Integral of cos(θ) sin(θ),2,12,0,0
+93,Complex Integral Evaluation,3,10,0,0
+94,Base Station Path Loss Calculation,1,217,0,2
+95,Skill Paralysis: Dreaming vs Doing,5,43,4,0
+96,Learning Rust Programming,10,24,0,0
+97,Mastering Conversational German,2,159,1,0
+98,Career Strategy: German Automotive Industry,1,190,0,0
+99,Syndrome Decoding Problem Explained,2,13,0,0
+100,Linear Cyclic Codes Explained,2,18,0,0
+101,72-Hour Online Money Sprint,1,78,1,1
+102,Error Patterns and Syndrome Mapping,2,18,0,0
+103,Square Cellular System Geometry,6,50,0,1
+104,Thesis Topic Research at FAPS,7,167,3,4
+105,AI Internship Prep Study Plan,1,314,2,0
+106,Job Contract Acceptance and Onboarding,2,67,4,1
+107,Manus AI: Autonomous Task Automation,1,10,0,0
+108,AI-Integrated Embedded Systems Career Strategy,5,74,0,0
+109,NI Germany Employment Onboarding,1,296,5,3
+110,Thesis Application Email Strategy,2,282,0,2
+111,Thesis Proposal: Indoor Positioning Research,2,112,2,0
+112,Thesis Project Application Strategy,5,253,1,1
+113,LabVIEW Learning for Beginners,3,83,0,0
+114,Mental Decluttering Strategy,4,46,2,0
+115,Strategic Performance Optimization,1,155,0,0
+116,Communication Skills Enhancement,1,122,4,2
+117,AI Agent Learning Roadmap,7,64,3,0
+118,Polishing page layout and text alignment,2,19,0,0
+119,Resume and cover letter automation project,2,108,2,1
+120,Async/await patterns for beginners,3,10,0,0
+121,Building a simple PWA,6,94,7,1
+122,Preparing application for ML cyber-physical event detection project,3,140,1,3
+123,Setting up Hermes agent with Ollama locally,3,47,1,3
+124,Resume optimization for student and internship roles,11,64,0,3
+125,Ghostwriting a thesis application email,1,414,1,1
+126,Using Nvidia's free AI models and tools,54,65,5,8
+127,MATLAB experiment concepts and theory preparation,11,17,1,1
+128,Hermes agent and Kimi K 2.6 integration with OpenRouter,4,24,2,0
+129,Detecting and revising AI-written theory answers,1,19,0,0
+130,Learning deep learning through tiny torch,17,46,0,2
+131,Council decision review,5,13,0,1
+132,Adding LLM council skill,1,13,0,0
+133,App idea POC analysis and competitor research,2,47,1,0
+134,Flachdraht-Richtverfahren für Hairpin-Statoren,10,75,2,1
+135,Building an AI and connectivity portfolio for internship readiness,16,85,2,7
+136,Update humanizer skill from repository,1,13,0,0
+137,Open source model for MacBook Air M5,1,19,0,0
+138,MATLAB laboratory course preparation,13,19,1,2
+139,Friedrich Alexander University overview,2,4,0,0
+140,Local private career agent setup and model selection,42,82,10,13
+141,Finding relevant student jobs in Bavaria,3,117,0,0
+142,Arc browser extensions and ad blockers,2,8,0,0
+143,MacBook setup guide for beginners,36,14,3,0
+144,Building relationships with professors for thesis projects,1,32,0,0`;
+
+        // Parse CSV
+        function parseCSV(csv) {
+            const lines = csv.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const obj = {};
+                const line = lines[i];
+                const regex = /(?:[^,"]|"(?:(?="")|(?!.*?"[^,])|[^"])*")+/g;
+                const matches = line.match(regex) || [];
+                
+                for (let j = 0; j < headers.length; j++) {
+                    let value = matches[j] || '';
+                    value = value.trim().replace(/^"|"$/g, '');
+                    
+                    if (headers[j] === 'Chat_Name') {
+                        obj[headers[j]] = value;
+                    } else {
+                        obj[headers[j]] = isNaN(value) ? value : Number(value);
+                    }
+                }
+                
+                if (obj.Chat_Name) {
+                    data.push(obj);
+                }
+            }
+            return data;
+        }
+
+        const chatData = parseCSV(csvData);
+
+        // Sort by turns descending and get top 10
+        const topChats = chatData
+            .sort((a, b) => b.Total_Turns - a.Total_Turns)
+            .slice(0, 10);
+
+        // Calculate filler word distribution
+        const fillerDistribution = {
+            'just': 75,
+            'please': 37,
+            'maybe': 29,
+            'other': 173 - 75 - 37 - 29
+        };
+
+        // Initialize Charts
+        // 1. Pie Chart - Filler Words
+        const ctx1 = document.getElementById('fillerPieChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['just', 'please', 'maybe', 'other fillers'],
+                datasets: [{
+                    data: [75, 37, 29, 32],
+                    backgroundColor: [
+                        '#f59e0b',
+                        '#f97316',
+                        '#ef4444',
+                        '#fbbf24'
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: {
+                                size: 13,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = 173;
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Bar Chart - Filler vs Constraints
+        const ctx2 = document.getElementById('fillerVsConstraintsChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ['Filler Words', 'Explicit Constraints'],
+                datasets: [{
+                    label: 'Count',
+                    data: [173, 218],
+                    backgroundColor: [
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(6, 182, 212, 0.8)'
+                    ],
+                    borderColor: [
+                        '#f59e0b',
+                        '#06b6d4'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 250,
+                        ticks: {
+                            font: { size: 12 }
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            font: { size: 13, weight: '600' }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Populate Top Chats Table
+        function populateTable(data) {
+            const tbody = document.getElementById('topChatsTable');
+            tbody.innerHTML = '';
+            
+            data.forEach((chat, index) => {
+                const fillerClass = chat.Filler_Word_Count > 5 ? 'high' : '';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td class="chat-name" title="${chat.Chat_Name}">${chat.Chat_Name || '(Unnamed)'}</td>
+                    <td><span class="turns-badge">${chat.Total_Turns}</span></td>
+                    <td>${chat.Avg_Prompt_Length}</td>
+                    <td><span class="filler-badge ${fillerClass}">${chat.Filler_Word_Count}</span></td>
+                    <td>${chat.Explicit_Constraints}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        populateTable(topChats);
+
+        // Table Sorting
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', function() {
+                const column = this.dataset.column;
+                const isAsc = this.classList.contains('sorted-asc');
+                
+                // Remove all sorted classes
+                document.querySelectorAll('th.sortable').forEach(h => {
+                    h.classList.remove('sorted-asc', 'sorted-desc');
+                });
+                
+                let sortedData;
+                if (column === 'turns') {
+                    sortedData = topChats.sort((a, b) => 
+                        isAsc ? a.Total_Turns - b.Total_Turns : b.Total_Turns - a.Total_Turns
+                    );
+                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
+                } else if (column === 'filler') {
+                    sortedData = topChats.sort((a, b) => 
+                        isAsc ? a.Filler_Word_Count - b.Filler_Word_Count : b.Filler_Word_Count - a.Filler_Word_Count
+                    );
+                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
+                } else if (column === 'avg_length') {
+                    sortedData = topChats.sort((a, b) => 
+                        isAsc ? a.Avg_Prompt_Length - b.Avg_Prompt_Length : b.Avg_Prompt_Length - a.Avg_Prompt_Length
+                    );
+                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
+                } else if (column === 'constraints') {
+                    sortedData = topChats.sort((a, b) => 
+                        isAsc ? a.Explicit_Constraints - b.Explicit_Constraints : b.Explicit_Constraints - a.Explicit_Constraints
+                    );
+                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
+                } else if (column === 'name') {
+                    sortedData = topChats.sort((a, b) => 
+                        isAsc ? b.Chat_Name.localeCompare(a.Chat_Name) : a.Chat_Name.localeCompare(b.Chat_Name)
+                    );
+                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
+                }
+                
+                populateTable(sortedData);
+            });
+        });
+    </script>
+</body>
+</html>
