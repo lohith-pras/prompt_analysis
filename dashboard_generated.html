@@ -3,381 +3,486 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prompt Evaluation Dashboard</title>
+    <title>Prompt Intelligence Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg:           #0b0906;
+            --bg-card:      #131009;
+            --bg-subtle:    #1c1710;
+            --border:       #2a2318;
+            --border-hi:    #3d3526;
+            --cream:        #ede3d5;
+            --cream-dim:    #c8b89e;
+            --cream-muted:  #9a8c7c;
+            --amber:        #c9913a;
+            --amber-hi:     #e8b86d;
+            --teal:         #3d8a7a;
+            --teal-hi:      #5ab5a2;
+            --red-hi:       #d46060;
         }
 
-        :root {
-            --primary: #3b82f6;
-            --secondary: #8b5cf6;
-            --accent-warm: #f59e0b;
-            --accent-cool: #06b6d4;
-            --bg-dark: #0f172a;
-            --bg-light: #f8fafc;
-            --card-bg: #ffffff;
-            --text-dark: #1e293b;
-            --text-light: #64748b;
-            --border: #e2e8f0;
-            --success: #10b981;
-            --warning: #ef4444;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, var(--bg-light) 0%, #f1f5f9 100%);
-            color: var(--text-dark);
+            font-family: 'Space Mono', monospace;
+            background: var(--bg);
+            color: var(--cream);
             line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* grain overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.035;
+            pointer-events: none;
+            z-index: 9999;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1300px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 4rem 2.5rem;
         }
 
+        /* ── HEADER ── */
         .header {
-            margin-bottom: 3rem;
-            text-align: center;
+            margin-bottom: 5rem;
+            animation: fadeUp 0.8s ease forwards;
+        }
+
+        .eyebrow {
+            font-size: 0.66rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--amber);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .eyebrow::before {
+            content: '';
+            width: 3rem;
+            height: 1px;
+            background: var(--amber);
+            opacity: 0.5;
+            flex-shrink: 0;
+        }
+
+        .eyebrow::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(201,145,58,0.4), transparent);
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(3rem, 7vw, 5.8rem);
+            font-weight: 300;
+            line-height: 1.0;
+            letter-spacing: -0.02em;
+            color: var(--cream);
+            margin-bottom: 2rem;
         }
 
-        .header p {
-            color: var(--text-light);
-            font-size: 1.1rem;
+        .header h1 em {
+            font-style: italic;
+            color: var(--amber-hi);
         }
 
-        .summary-grid {
+        .header-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem 3rem;
+            font-size: 0.68rem;
+            color: var(--cream-muted);
+            letter-spacing: 0.12em;
+            border-top: 1px solid var(--border-hi);
+            padding-top: 1.5rem;
+        }
+
+        .header-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .header-meta span::before {
+            content: '▸';
+            color: var(--amber);
+            font-size: 0.55rem;
+        }
+
+        /* ── STATS ── */
+        .stats-section {
+            margin-bottom: 5rem;
+            animation: fadeUp 0.8s ease 0.12s both;
+        }
+
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 3rem;
+            grid-template-columns: repeat(5, 1fr);
+            border: 1px solid var(--border-hi);
         }
 
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--border);
-            transition: all 0.3s ease;
+        .stat-item {
+            padding: 2.5rem 2rem;
+            border-right: 1px solid var(--border-hi);
+            position: relative;
+            overflow: hidden;
+            transition: background 0.3s;
         }
 
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        .stat-item:last-child { border-right: none; }
+        .stat-item:hover { background: rgba(201,145,58,0.03); }
+
+        .stat-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--amber), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
-        .card.stat {
-            text-align: center;
-        }
+        .stat-item:hover::before { opacity: 1; }
 
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin: 0.5rem 0;
+        .stat-num {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3.5rem;
+            font-weight: 600;
+            color: var(--amber-hi);
+            line-height: 1;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
         }
 
         .stat-label {
-            color: var(--text-light);
-            font-size: 0.95rem;
-            font-weight: 500;
+            font-size: 0.6rem;
+            letter-spacing: 0.22em;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            color: var(--cream-muted);
         }
 
-        .stat-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: var(--text-dark);
+        /* ── SECTION HEADER ── */
+        .section-header {
             display: flex;
-            align-items: center;
-            gap: 0.75rem;
+            align-items: flex-end;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 28px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 2px;
+        .section-num {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 4.5rem;
+            font-weight: 300;
+            color: var(--border-hi);
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .section-titles { flex: 1; }
+
+        .section-titles h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.7rem;
+            font-weight: 400;
+            color: var(--cream);
+            letter-spacing: 0.02em;
+        }
+
+        .section-titles p {
+            font-size: 0.63rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--cream-muted);
+        }
+
+        .section-rule {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--border-hi), transparent);
+            margin-bottom: 0.9rem;
+        }
+
+        /* ── CHARTS ── */
+        .charts-section {
+            margin-bottom: 5rem;
+            animation: fadeUp 0.8s ease 0.24s both;
         }
 
         .charts-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
+            grid-template-columns: 5fr 7fr;
+            border: 1px solid var(--border-hi);
+            background: var(--border-hi);
+            gap: 1px;
         }
 
-        .chart-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--border);
+        .chart-panel {
+            background: var(--bg-card);
+            padding: 2.5rem;
+        }
+
+        .chart-eyebrow {
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--amber);
+            margin-bottom: 0.5rem;
         }
 
         .chart-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: var(--text-dark);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.35rem;
+            font-weight: 400;
+            color: var(--cream);
+            margin-bottom: 2rem;
+            line-height: 1.3;
         }
 
         .chart-wrapper {
             position: relative;
-            height: 300px;
+            height: 270px;
+        }
+
+        /* ── TABLE ── */
+        .table-section {
+            margin-bottom: 5rem;
+            animation: fadeUp 0.8s ease 0.36s both;
         }
 
         .table-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--border);
-            margin-bottom: 3rem;
+            border: 1px solid var(--border-hi);
+            overflow: hidden;
         }
 
-        .table-wrapper {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+        table { width: 100%; border-collapse: collapse; }
 
         thead {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+            background: var(--bg-subtle);
+            border-bottom: 1px solid var(--border-hi);
         }
 
         th {
-            padding: 1rem;
+            padding: 1.2rem 1.5rem;
             text-align: left;
-            font-weight: 600;
-            color: var(--text-dark);
-            border-bottom: 2px solid var(--border);
+            font-size: 0.6rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--amber);
+            font-weight: 400;
             cursor: pointer;
             user-select: none;
             white-space: nowrap;
+            border-right: 1px solid var(--border);
+            transition: background 0.2s;
         }
 
-        th:hover {
-            background: rgba(59, 130, 246, 0.1);
+        th:last-child { border-right: none; }
+        th:hover { background: rgba(201,145,58,0.06); }
+
+        th.sortable::after  { content: ' ↕'; opacity: 0.3; }
+        th.sorted-asc::after  { content: ' ↑'; opacity: 1; }
+        th.sorted-desc::after { content: ' ↓'; opacity: 1; }
+
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
         }
 
-        th.sortable::after {
-            content: ' ⇅';
-            opacity: 0.5;
-            font-size: 0.9rem;
-        }
-
-        th.sorted-asc::after {
-            content: ' ↑';
-            opacity: 1;
-            color: var(--primary);
-        }
-
-        th.sorted-desc::after {
-            content: ' ↓';
-            opacity: 1;
-            color: var(--primary);
-        }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: rgba(201,145,58,0.03); }
 
         td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-dark);
+            padding: 1.2rem 1.5rem;
+            font-size: 0.78rem;
+            color: var(--cream);
+            border-right: 1px solid var(--border);
+            vertical-align: middle;
         }
 
-        tbody tr:hover {
-            background: rgba(59, 130, 246, 0.03);
+        td:last-child { border-right: none; }
+
+        .td-rank {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            font-weight: 300;
+            color: var(--border-hi);
+            width: 3.5rem;
         }
 
         .chat-name {
-            font-weight: 500;
-            max-width: 300px;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1rem;
+            max-width: 310px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .filler-badge {
+        .badge {
             display: inline-block;
-            padding: 0.4rem 0.8rem;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
-            color: #92400e;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 0.25rem 0.65rem;
+            font-size: 0.7rem;
+            border: 1px solid;
+            letter-spacing: 0.05em;
         }
 
-        .filler-badge.high {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
-            color: #7f1d1d;
-            border-color: rgba(239, 68, 68, 0.2);
-        }
+        .badge-teal  { color: var(--teal-hi); border-color: rgba(61,138,122,0.35); background: rgba(61,138,122,0.08); }
+        .badge-amber { color: var(--amber-hi); border-color: rgba(201,145,58,0.35); background: rgba(201,145,58,0.08); }
+        .badge-red   { color: var(--red-hi); border-color: rgba(212,96,96,0.35); background: rgba(212,96,96,0.08); }
 
-        .turns-badge {
-            display: inline-block;
-            padding: 0.4rem 0.8rem;
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05));
-            color: #164e63;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border: 1px solid rgba(6, 182, 212, 0.2);
-        }
-
+        /* ── FOOTER ── */
         .footer {
             text-align: center;
-            padding: 2rem;
-            color: var(--text-light);
-            font-size: 0.9rem;
-            border-top: 1px solid var(--border);
-            margin-top: 3rem;
+            padding: 2.5rem 0 1.5rem;
+            border-top: 1px solid var(--border-hi);
+            font-size: 0.63rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--cream-muted);
+            line-height: 2.2;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
+        /* ── ANIMATIONS ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
 
-            .header h1 {
-                font-size: 1.8rem;
-            }
+        /* ── RESPONSIVE ── */
+        @media (max-width: 960px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .stats-grid .stat-item:nth-child(3) { border-right: none; }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
 
-            .summary-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .chart-wrapper {
-                height: 250px;
-            }
-
-            table {
-                font-size: 0.9rem;
-            }
-
-            td, th {
-                padding: 0.75rem;
-            }
-
-            .chat-name {
-                max-width: 150px;
-            }
+        @media (max-width: 600px) {
+            .container { padding: 2rem 1.25rem; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stats-grid .stat-item:nth-child(2) { border-right: none; }
+            .stats-grid .stat-item:nth-child(3) { border-right: 1px solid var(--border-hi); }
+            .stats-grid .stat-item:nth-child(4) { border-right: none; }
+            .chat-name { max-width: 130px; }
+            td, th { padding: 0.9rem 1rem; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📊 Prompt Evaluation Dashboard</h1>
-            <p>Personal insights into your conversational patterns with Claude</p>
-        </div>
 
-        <div class="summary-grid">
-            <div class="card stat">
-                <div class="stat-icon">💬</div>
-                <div class="stat-label">Total Chats</div>
-                <div class="stat-value">142</div>
+        <header class="header">
+            <div class="eyebrow">Classified &middot; Personal Analysis &middot; Subject: lnlohith3@gmail.com</div>
+            <h1>Prompt <em>Intelligence</em><br>Report</h1>
+            <div class="header-meta">
+                <span>142 conversations analyzed</span>
+                <span>1,094 total prompts</span>
+                <span>Claude.ai export</span>
+                <span>May 2026</span>
             </div>
-            <div class="card stat">
-                <div class="stat-icon">🔤</div>
-                <div class="stat-label">Total Prompts</div>
-                <div class="stat-value">1,094</div>
-            </div>
-            <div class="card stat">
-                <div class="stat-icon">📝</div>
-                <div class="stat-label">Total Words</div>
-                <div class="stat-value">52.3K</div>
-            </div>
-            <div class="card stat">
-                <div class="stat-icon">⏱️</div>
-                <div class="stat-label">Avg Prompt</div>
-                <div class="stat-value">47<span style="font-size: 0.6em;"> words</span></div>
-            </div>
-            <div class="card stat">
-                <div class="stat-icon">🔄</div>
-                <div class="stat-label">Avg Turns</div>
-                <div class="stat-value">7.7</div>
-            </div>
-        </div>
+        </header>
 
-        <h2 class="section-title">Habit Patterns</h2>
-        <div class="charts-grid">
-            <div class="chart-container">
-                <h3 class="chart-title">Top Filler Words Usage</h3>
-                <div class="chart-wrapper">
-                    <canvas id="fillerPieChart"></canvas>
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-num" data-target="142" data-type="int">0</div>
+                    <div class="stat-label">Total Chats</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num" data-target="1094" data-type="int">0</div>
+                    <div class="stat-label">Total Prompts</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num" data-target="52300" data-type="k">0</div>
+                    <div class="stat-label">Total Words</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num" data-target="47" data-type="int">0</div>
+                    <div class="stat-label">Avg Prompt (words)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num" data-target="7.7" data-type="float">0</div>
+                    <div class="stat-label">Avg Turns / Chat</div>
                 </div>
             </div>
+        </section>
 
-            <div class="chart-container">
-                <h3 class="chart-title">Filler Words vs Explicit Constraints</h3>
-                <div class="chart-wrapper">
-                    <canvas id="fillerVsConstraintsChart"></canvas>
+        <section class="charts-section">
+            <div class="section-header">
+                <div class="section-num">01</div>
+                <div class="section-titles">
+                    <h2>Behavioral Analysis</h2>
+                    <p>Language habit patterns across all conversations</p>
+                </div>
+                <div class="section-rule"></div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-panel">
+                    <div class="chart-eyebrow">Distribution</div>
+                    <h3 class="chart-title">Top Filler Word Usage</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="fillerPieChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-panel">
+                    <div class="chart-eyebrow">Comparison</div>
+                    <h3 class="chart-title">Filler Words vs Explicit Constraints</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="fillerVsConstraintsChart"></canvas>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <h2 class="section-title">Top 10 Longest Conversations</h2>
-        <div class="table-container">
-            <div class="table-wrapper">
+        <section class="table-section">
+            <div class="section-header">
+                <div class="section-num">02</div>
+                <div class="section-titles">
+                    <h2>Conversation Dossier</h2>
+                    <p>Top 10 longest conversations by turn count</p>
+                </div>
+                <div class="section-rule"></div>
+            </div>
+            <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th class="sortable" data-column="rank">#</th>
+                            <th>#</th>
                             <th class="sortable" data-column="name">Chat Name</th>
-                            <th class="sortable" data-column="turns">Total Turns</th>
-                            <th class="sortable" data-column="avg_length">Avg Prompt Length</th>
-                            <th class="sortable" data-column="filler">Filler Words</th>
+                            <th class="sortable" data-column="turns">Turns</th>
+                            <th class="sortable" data-column="avg_length">Avg Length</th>
+                            <th class="sortable" data-column="filler">Filler</th>
                             <th class="sortable" data-column="constraints">Constraints</th>
                         </tr>
                     </thead>
-                    <tbody id="topChatsTable">
-                    </tbody>
+                    <tbody id="topChatsTable"></tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
-        <div class="footer">
-            <p>Dashboard generated from Claude conversations export analysis</p>
-            <p style="font-size: 0.85rem; margin-top: 0.5rem; opacity: 0.8;">Data represents 1094 prompts across 142 conversations</p>
-        </div>
+        <footer class="footer">
+            <p>Prompt Intelligence Report &mdash; Claude Conversations Export Analysis</p>
+            <p style="opacity:0.45;">1,094 prompts &middot; 142 conversations &middot; Generated May 2026</p>
+        </footer>
+
     </div>
 
     <script>
+        // ── Data ──────────────────────────────────────────────────────────────
         const csvData = `Target_ID,Chat_Name,Total_Turns,Avg_Prompt_Length,Filler_Word_Count,Explicit_Constraints
 32,Sensor data analysis internship interview prep,111,40,20,30
 17,Linux home server,86,32,7,15
@@ -394,102 +499,103 @@
             const lines = csv.trim().split('\n');
             const headers = lines[0].split(',');
             const data = [];
-            
             for (let i = 1; i < lines.length; i++) {
                 const obj = {};
-                const line = lines[i];
-                const regex = /(?:[^,"]|"(?:(?="")|(?!.*?"[^,])|[^"])*")+/g;
-                const matches = line.match(regex) || [];
-                
+                const matches = lines[i].match(/(?:[^,"]+|"[^"]*")+/g) || [];
                 for (let j = 0; j < headers.length; j++) {
-                    let value = matches[j] || '';
-                    value = value.trim().replace(/^"|"$/g, '');
-                    
-                    if (headers[j] === 'Chat_Name') {
-                        obj[headers[j]] = value;
-                    } else {
-                        obj[headers[j]] = isNaN(value) ? value : Number(value);
-                    }
+                    let v = (matches[j] || '').trim().replace(/^"|"$/g, '');
+                    obj[headers[j]] = headers[j] === 'Chat_Name' ? v : (isNaN(v) ? v : Number(v));
                 }
-                
-                if (obj.Chat_Name) {
-                    data.push(obj);
-                }
+                if (obj.Chat_Name) data.push(obj);
             }
             return data;
         }
 
         const chatData = parseCSV(csvData);
 
-        const ctx1 = document.getElementById('fillerPieChart').getContext('2d');
-        new Chart(ctx1, {
+        // ── Counter animation ─────────────────────────────────────────────────
+        function animateCounter(el, target, type) {
+            const duration = 1500;
+            const start = performance.now();
+            function tick(t) {
+                const p = Math.min((t - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - p, 4);
+                const val = target * eased;
+                if      (type === 'k')     el.textContent = (val / 1000).toFixed(1) + 'K';
+                else if (type === 'float') el.textContent = val.toFixed(1);
+                else el.textContent = target >= 1000 ? Math.floor(val).toLocaleString() : Math.floor(val).toString();
+                if (p < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (!e.isIntersecting) return;
+                animateCounter(e.target, parseFloat(e.target.dataset.target), e.target.dataset.type);
+                io.unobserve(e.target);
+            });
+        }, { threshold: 0.3 });
+
+        document.querySelectorAll('[data-target]').forEach(el => io.observe(el));
+
+        // ── Chart global defaults ─────────────────────────────────────────────
+        Chart.defaults.color = '#9a8c7c';
+        Chart.defaults.font.family = "'Space Mono', monospace";
+        Chart.defaults.font.size = 11;
+
+        // ── Doughnut ──────────────────────────────────────────────────────────
+        new Chart(document.getElementById('fillerPieChart'), {
             type: 'doughnut',
             data: {
-                labels: ['just', 'please', 'maybe'],
+                labels: ['just', 'please', 'maybe', 'other'],
                 datasets: [{
                     data: [75, 37, 29, 32],
-                    backgroundColor: [
-                        '#f59e0b',
-                        '#f97316',
-                        '#ef4444',
-                        '#fbbf24'
-                    ],
-                    borderColor: '#ffffff',
-                    borderWidth: 3
+                    backgroundColor: ['#c9913a', '#3d8a7a', '#7a6030', '#5ab5a2'],
+                    borderColor: '#131009',
+                    borderWidth: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '70%',
                 plugins: {
                     legend: {
                         position: 'bottom',
                         labels: {
                             usePointStyle: true,
-                            padding: 15,
-                            font: {
-                                size: 13,
-                                weight: '500'
-                            }
+                            pointStyle: 'rect',
+                            padding: 20,
+                            color: '#9a8c7c',
+                            font: { size: 11 }
                         }
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        backgroundColor: '#1c1710',
+                        borderColor: '#3d3526',
+                        borderWidth: 1,
                         padding: 12,
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 13 },
                         callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.parsed || 0;
-                                const total = 173;
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
+                            label: ctx => `  ${ctx.label}: ${ctx.parsed} (${((ctx.parsed / 173) * 100).toFixed(1)}%)`
                         }
                     }
                 }
             }
         });
 
-        const ctx2 = document.getElementById('fillerVsConstraintsChart').getContext('2d');
-        new Chart(ctx2, {
+        // ── Bar ───────────────────────────────────────────────────────────────
+        new Chart(document.getElementById('fillerVsConstraintsChart'), {
             type: 'bar',
             data: {
                 labels: ['Filler Words', 'Explicit Constraints'],
                 datasets: [{
-                    label: 'Count',
                     data: [173, 218],
-                    backgroundColor: [
-                        'rgba(245, 158, 11, 0.8)',
-                        'rgba(6, 182, 212, 0.8)'
-                    ],
-                    borderColor: [
-                        '#f59e0b',
-                        '#06b6d4'
-                    ],
-                    borderWidth: 2,
-                    borderRadius: 8
+                    backgroundColor: ['rgba(201,145,58,0.55)', 'rgba(61,138,122,0.55)'],
+                    borderColor: ['#c9913a', '#3d8a7a'],
+                    borderWidth: 1,
+                    borderRadius: 0,
+                    hoverBackgroundColor: ['rgba(232,184,109,0.7)', 'rgba(90,181,162,0.7)']
                 }]
             },
             options: {
@@ -499,88 +605,71 @@
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        padding: 12,
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 13 }
+                        backgroundColor: '#1c1710',
+                        borderColor: '#3d3526',
+                        borderWidth: 1,
+                        padding: 12
                     }
                 },
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 268,
-                        ticks: {
-                            font: { size: 12 }
-                        }
+                        max: 270,
+                        grid: { color: 'rgba(42,35,24,0.8)' },
+                        ticks: { color: '#7a6030' }
                     },
                     y: {
-                        ticks: {
-                            font: { size: 13, weight: '600' }
-                        }
+                        grid: { display: false },
+                        ticks: { color: '#ede3d5', font: { size: 12 } }
                     }
                 }
             }
         });
 
+        // ── Table ─────────────────────────────────────────────────────────────
         function populateTable(data) {
             const tbody = document.getElementById('topChatsTable');
             tbody.innerHTML = '';
-            
-            data.forEach((chat, index) => {
-                const fillerClass = chat.Filler_Word_Count > 5 ? 'high' : '';
+            data.forEach((chat, i) => {
+                const fillerClass = chat.Filler_Word_Count > 5 ? 'badge-red' : 'badge-amber';
                 const row = document.createElement('tr');
+                row.style.cssText = `opacity:0;transform:translateY(8px);transition:opacity 0.4s ease ${i * 0.05}s,transform 0.4s ease ${i * 0.05}s`;
                 row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td class="chat-name" title="${chat.Chat_Name}">${chat.Chat_Name || '(Unnamed)'}</td>
-                    <td><span class="turns-badge">${chat.Total_Turns}</span></td>
-                    <td>${chat.Avg_Prompt_Length}</td>
-                    <td><span class="filler-badge ${fillerClass}">${chat.Filler_Word_Count}</span></td>
+                    <td class="td-rank">${String(i + 1).padStart(2, '0')}</td>
+                    <td><div class="chat-name" title="${chat.Chat_Name}">${chat.Chat_Name || '(Unnamed)'}</div></td>
+                    <td><span class="badge badge-teal">${chat.Total_Turns}</span></td>
+                    <td><span class="badge badge-amber">${chat.Avg_Prompt_Length}w</span></td>
+                    <td><span class="badge ${fillerClass}">${chat.Filler_Word_Count}</span></td>
                     <td>${chat.Explicit_Constraints}</td>
                 `;
                 tbody.appendChild(row);
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    row.style.opacity = '1';
+                    row.style.transform = 'translateY(0)';
+                }));
             });
         }
 
         populateTable(chatData);
 
+        // ── Sorting ───────────────────────────────────────────────────────────
+        const sortMap = {
+            name:        (a, b) => a.Chat_Name.localeCompare(b.Chat_Name),
+            turns:       (a, b) => a.Total_Turns - b.Total_Turns,
+            avg_length:  (a, b) => a.Avg_Prompt_Length - b.Avg_Prompt_Length,
+            filler:      (a, b) => a.Filler_Word_Count - b.Filler_Word_Count,
+            constraints: (a, b) => a.Explicit_Constraints - b.Explicit_Constraints
+        };
+
         document.querySelectorAll('th.sortable').forEach(th => {
-            th.addEventListener('click', function() {
-                const column = this.dataset.column;
+            th.addEventListener('click', function () {
+                const col = this.dataset.column;
                 const isAsc = this.classList.contains('sorted-asc');
-                
-                document.querySelectorAll('th.sortable').forEach(h => {
-                    h.classList.remove('sorted-asc', 'sorted-desc');
-                });
-                
-                let sortedData;
-                if (column === 'turns') {
-                    sortedData = chatData.sort((a, b) => 
-                        isAsc ? a.Total_Turns - b.Total_Turns : b.Total_Turns - a.Total_Turns
-                    );
-                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
-                } else if (column === 'filler') {
-                    sortedData = chatData.sort((a, b) => 
-                        isAsc ? a.Filler_Word_Count - b.Filler_Word_Count : b.Filler_Word_Count - a.Filler_Word_Count
-                    );
-                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
-                } else if (column === 'avg_length') {
-                    sortedData = chatData.sort((a, b) => 
-                        isAsc ? a.Avg_Prompt_Length - b.Avg_Prompt_Length : b.Avg_Prompt_Length - a.Avg_Prompt_Length
-                    );
-                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
-                } else if (column === 'constraints') {
-                    sortedData = chatData.sort((a, b) => 
-                        isAsc ? a.Explicit_Constraints - b.Explicit_Constraints : b.Explicit_Constraints - a.Explicit_Constraints
-                    );
-                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
-                } else if (column === 'name') {
-                    sortedData = chatData.sort((a, b) => 
-                        isAsc ? b.Chat_Name.localeCompare(a.Chat_Name) : a.Chat_Name.localeCompare(b.Chat_Name)
-                    );
-                    this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
-                }
-                
-                populateTable(sortedData);
+                document.querySelectorAll('th.sortable').forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+                const fn = sortMap[col] || (() => 0);
+                const sorted = [...chatData].sort((a, b) => isAsc ? fn(b, a) : fn(a, b));
+                this.classList.add(isAsc ? 'sorted-desc' : 'sorted-asc');
+                populateTable(sorted);
             });
         });
     </script>

@@ -112,6 +112,41 @@ def extract_metrics(conversations: List[Dict]) -> Dict:
     }
 
 
+def export_jsonl(conversations: List[Dict], output_path: str, platform: str = "claude") -> int:
+    """Export per-turn records to JSONL. Returns number of records written."""
+    records = []
+    for conv in conversations:
+        session_id = conv.get("uuid", conv.get("id", "unknown"))
+        messages = conv.get("chat_messages", [])
+        turn_index = 0
+        for i, msg in enumerate(messages):
+            if str(msg.get("sender", "")).lower() != "human":
+                continue
+            user_text = msg.get("text", "").strip()
+            if not user_text:
+                continue
+            assistant_text = ""
+            for j in range(i + 1, len(messages)):
+                if str(messages[j].get("sender", "")).lower() in ("assistant", "ai"):
+                    assistant_text = messages[j].get("text", "").strip()
+                    break
+            records.append({
+                "session_id": session_id,
+                "platform": platform,
+                "timestamp": msg.get("created_at", ""),
+                "turn_index": turn_index,
+                "user_prompt": user_text,
+                "assistant_response": assistant_text,
+                "prompt_length_tokens": len(user_text.split()),
+                "response_length_tokens": len(assistant_text.split()),
+            })
+            turn_index += 1
+    with open(output_path, "w", encoding="utf-8") as f:
+        for r in records:
+            f.write(json.dumps(r) + "\n")
+    return len(records)
+
+
 def generate_csv_data(metrics: Dict) -> str:
     """Generate CSV string for embedding in HTML."""
     csv_lines = ['Target_ID,Chat_Name,Total_Turns,Avg_Prompt_Length,Filler_Word_Count,Explicit_Constraints']
@@ -734,12 +769,17 @@ def main():
     
     print("📊 Extracting metrics...")
     metrics = extract_metrics(conversations)
-    
+
     print(f"✓ Found {metrics['total_chats']} active chats")
     print(f"✓ Processed {metrics['total_prompts']} prompts")
     print(f"✓ Total words: {metrics['total_words']:,}")
     print(f"✓ Filler words: {metrics['total_fillers']} | Constraints: {metrics['total_constraints']}")
-    
+
+    jsonl_path = "unified_chats.jsonl"
+    print(f"💾 Exporting turns to: {jsonl_path}")
+    n_records = export_jsonl(conversations, jsonl_path)
+    print(f"✓ Wrote {n_records} turn records")
+
     print("🎨 Generating HTML dashboard...")
     html = generate_html_dashboard(metrics)
     

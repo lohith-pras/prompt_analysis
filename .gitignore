@@ -8,6 +8,20 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Raw data exports (large, personal)
 /google/
 /instagram/
 /claude/
+
+# Generated artifacts
+unified_chats.jsonl
+evaluated_prompts.jsonl
+*.duckdb
+*.html
+*.csv
+
+# OS / tooling
+.DS_Store
+.agents/
+.claude/
