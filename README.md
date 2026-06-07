@@ -1,82 +1,32 @@
-# Prompt Dashboard
+# Prompt Analysis Dashboard
 
-This repository turns exported conversation logs into an interactive HTML dashboard so I can study how I prompt, how often I use filler words, and how I structure constraints across chats.
+Analyses your exported Claude, Gemini, and ChatGPT conversation logs and generates a single interactive HTML dashboard with stats on your prompting behaviour.
 
-## What It Does
+Useful for understanding how you write prompts — filler word frequency, prompt length distribution, constraint patterns, and more.
 
-The main script takes a JSON export from Claude and builds a dashboard with:
+## What it produces
 
-- summary cards for chats, prompts, words, and averages
-- filler-word and constraint habit charts
-- a sortable table of the 10 longest conversations
+- Total conversations and messages per model
+- Prompt length trends over time
+- Filler word usage (`please`, `just`, `could you`, etc.)
+- Constraint language frequency (`must`, `never`, `always`, etc.)
+- Interactive charts — no server needed, everything is in one HTML file
 
-The script is useful when you want to inspect the prompts you have been typing, spot repeated habits, and compare different conversation styles over time.
+## Stack
 
-## How the Notebook Works
-
-This notebook is the path I used to transform the raw export into a dashboard-ready dataset. It starts with the Claude JSON export, checks the structure, flattens the nested conversations, and then turns those rows into the metrics used by the dashboard.
-
-```mermaid
-flowchart TD
-	A[Claude conversations export JSON] --> B[Load conversations.json]
-	B --> C[Validate schema and sample records]
-	C --> D[Inspect conversation and message fields]
-	D --> E[Flatten nested data into conv_df and msg_df]
-	E --> F[Measure prompt length, fillers, and constraints]
-	F --> G[Create summary tables, correlations, and plots]
-	G --> H[Export prompt_evaluation_metrics.csv]
-	H --> I[Feed metrics into the HTML dashboard]
-```
-
-In other words:
-
-1. Load the export.
-2. Inspect the structure.
-3. Flatten the nested data.
-4. Calculate prompt metrics.
-5. Reuse the results for the dashboard.
-
-## Screenshot
-
-
-
-![Dashboard screenshot](docs/images/stat.png)
-![Dashboard screenshot](docs/images/filler.png)
+- **Python** 3.13
+- **DuckDB** — fast in-process SQL for log querying
+- **Anthropic SDK** — optional AI-generated summary of your prompting habits
+- **Output:** self-contained HTML (no external dependencies)
 
 ## Usage
 
-Run the generator with a JSON file as input:
+Export your conversations from Claude (Settings → Export data) then run:
 
 ```bash
-python3 generate_dashboard.py /path/to/conversations.json
+pip install uv
+uv sync
+uv run generate_dashboard.py path/to/conversations.json
 ```
 
-You can also provide a custom output file:
-
-```bash
-python3 generate_dashboard.py /path/to/conversations.json /path/to/output.html
-```
-
-Example using the Claude export in this repo:
-
-```bash
-python3 generate_dashboard.py claude/data-*/conversations.json
-```
-
-## Project Direction
-
-This is part of a larger personal data-analysis project. The broader goal is to collect and analyze data from the services I already use, learn patterns in how I work and prompt, and eventually use those exports for feature extraction and possibly ML-based analysis or training workflows.
-
-Future integrations will extend the same idea to:
-
-- Gemini logs
-- ChatGPT logs
-
-## Repository Structure
-
-- `generate_dashboard.py` - CLI script that reads a JSON export and creates the dashboard
-- `main.py` - thin launcher for the script
-- `prompt_evaluation_metrics.csv` - derived metrics export used during exploration
-- `eda_claude.ipynb` - exploratory notebook that informed the script
-
-
+Opens `dashboard_generated.html` in your browser.
